@@ -13,7 +13,7 @@ class Strategy:
         self.win_is_bet_amount = win_is_bet_amount
 
     def should_bet_again(self, curr, total_bet):
-        if curr <= 0:
+        if curr < self.min_bet:
             return False
 
         if self.win_is_bet_amount:
@@ -28,7 +28,7 @@ class Strategy:
 
         while self.should_bet_again(curr, total_bet):
             bet = self.get_next_bet(curr, total_bet)
-            if bet > curr or bet <= 0:
+            if not (self.min_bet <= bet <= curr):
                 break
             nsteps += 1
             total_bet += bet
@@ -51,18 +51,14 @@ class AllBetStragegy(Strategy):
 
 class MinBetStragegy(Strategy):
     def get_next_bet(self, curr, total_bet):
-        return min(self.min_bet, curr)
+        return self.min_bet
 
 
 class FixedBetStrategy(Strategy):
-    def __init__(
-        self, p, start, target, min_bet=1, bet_size=None, win_is_bet_amount=True
-    ):
+    def __init__(self, p, start, target, bet_size, min_bet=1, win_is_bet_amount=True):
         super().__init__(
             p, start, target, min_bet=min_bet, win_is_bet_amount=win_is_bet_amount
         )
-        if bet_size is None:
-            bet_size = start
         self.bet_size = bet_size
 
     def get_next_bet(self, curr, total_bet):
@@ -70,22 +66,14 @@ class FixedBetStrategy(Strategy):
 
 
 class FractionBetStrategy(Strategy):
-    def __init__(
-        self, p, start, target, min_bet=1, win_is_bet_amount=True, fraction=None
-    ):
+    def __init__(self, p, start, target, fraction, min_bet=1, win_is_bet_amount=True):
         super().__init__(
             p, start, target, min_bet=min_bet, win_is_bet_amount=win_is_bet_amount
         )
-        if fraction is None:
-            fraction = 1.0
         self.fraction = fraction
 
     def get_next_bet(self, curr, total_bet):
-        r = self.fraction * curr
-        r = int(self.min_bet * round(r / self.min_bet))
-        if r == 0:
-            r = 1
-        return r
+        return int(round(self.fraction * curr))
 
 
 class KellyBetStrategy(Strategy):
