@@ -28,8 +28,9 @@ class Strategy:
 
         while self.should_bet_again(curr, total_bet):
             bet = self.get_next_bet(curr, total_bet)
-            if not (self.min_bet <= bet <= curr):
+            if bet > curr:
                 break
+            bet = max(self.min_bet, bet)
             nsteps += 1
             total_bet += bet
             q = random.uniform(0, 1)
@@ -76,6 +77,23 @@ class FractionBetStrategy(Strategy):
         return int(round(self.fraction * curr))
 
 
+class FractionCumulativeBetStrategy(Strategy):
+    def __init__(self, p, start, target, fraction, min_bet=1, starting_bet=None, win_is_bet_amount=True):
+        super().__init__(
+            p, start, target, min_bet=min_bet, win_is_bet_amount=win_is_bet_amount
+        )
+        if starting_bet is None:
+            starting_bet = self.min_bet
+        self.starting_bet = starting_bet
+        self.fraction = fraction
+
+    def get_next_bet(self, curr, total_bet):
+        if total_bet == 0:
+            return self.starting_bet
+
+        return int(round(self.fraction * total_bet))
+
+
 class KellyBetStrategy(Strategy):
     def get_next_bet(self, curr, total_bet):
         if self.win_is_bet_amount:
@@ -111,6 +129,15 @@ class StrategiesToRun:
             strategies[f"fixed_{bet_size}"] = FixedBetStrategy(
                 *a, **kw, bet_size=bet_size
             )
+        for fraction in range(1, 101):
+            strategies[f"fraction_{fraction}"] = FractionBetStrategy(
+                *a, **kw, fraction=fraction / 100.0
+            )
+        for fraction in range(1, 101):
+            strategies[f"cum_fraction_{fraction}"] = FractionCumulativeBetStrategy(
+                *a, **kw, fraction=fraction / 100.0
+            )
+
         strategies["kelly"] = KellyBetStrategy(*a, **kw)
         self.strategies = strategies
 
